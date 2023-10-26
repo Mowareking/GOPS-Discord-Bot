@@ -18,6 +18,7 @@ async def on_message(message):
                     return
             opponent_id = int(message.content[8:-1])
             opponent_mention = message.content[6:-1] + ">"
+
             await message.channel.send(opponent_mention + " Do you want to play?\nYes/No")
             try:
                 opponent_message = await client.wait_for("message", check=lambda reply: reply.content.lower() in ["yes", "no"] and reply.author.id == opponent_id and reply.channel == message.channel, timeout=10.0)
@@ -28,6 +29,14 @@ async def on_message(message):
                  await message.channel.send(f"{message.author.mention}, {opponent_mention} The game is starting!")
             if opponent_message.content.lower() == "no":
                  await message.channel.send("Game over.")
+
+            author_hand, opponent_hand, stock = [x for x in range(1, 14)], [x for x in range(1, 14)], [x for x in range(1, 14)]
+            author_prizes, opponent_prizes = [], []
+            random.shuffle(stock)
+            print(stock)
+            current_prize = stock.pop()
+            cards_remaining = len(stock)
+            print(stock)
 
 
 client.run("MTE2NzE2NzM1NDk4MDAxNjIwMw.GphUqg.KmLq7KsnJTpv_pcDDTBqMXebGES-x1fopt7tS4")
