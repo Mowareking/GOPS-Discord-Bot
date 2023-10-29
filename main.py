@@ -1,9 +1,10 @@
 import discord
 import random
 import asyncio
-from key import TOKEN
+from key import TOKEN, BOT_ID
 
 client = discord.Client(intents=discord.Intents.all())
+users_playing = []
 
 class User():
     def __init__(self, id, suit):
@@ -30,11 +31,22 @@ class User():
                 second_move = await client.wait_for("message", check=lambda reply: reply.author.id in [other_player.id, self.author.id] and not reply.guild, timeout=timeout)
                 if second_move.content.startswith("$send "):
                     if second_move.author.id == self.author.id:
-                        await other_player.send(embed=create_embed(f"{self.display_name} sent a message:\n{second_move.content[6:]}"))
+                        await other_player.author.send(embed=create_embed(f"{self.display_name} sent a message:\n{second_move.content[6:]}"))
+                        await self.author.send(embed=create_embed(f"Message has been sent."))
                     else:
                         await self.author.send(embed=create_embed(f"{other_player.display_name} sent a message:\n{second_move.content[6:]}"))
+                        await other_player.author.send(embed=create_embed(f"Message has been sent."))
+                elif second_move.content == "$forfeit":
+                    if second_move.author.id == self.id:
+                        await self.author.send(embed=create_embed(f"You have forfeited the game."))
+                        await other_player.author.send(embed=create_embed(f"{self.display_name} forfeited the game."))
+                        return await channel.send(embed=create_embed(f"{self.mention} forfeited the game."))
+                    else:
+                        await other_player.author.send(embed=create_embed(f"You have forfeited the game."))
+                        await self.author.send(embed=create_embed(f"{other_player.display_name} forfeited the game."))
+                        return await channel.send(embed=create_embed(f"{other_player.mention} forfeited the game."))
                 elif not second_move.content.upper() in self.hand:
-                    await self.author.send(embed=create_embed("Invalid move"))
+                    await self.author.send(embed=create_embed("Invalid move."))
                 elif second_move.author.id == self.id:
                     self.move = second_move.content.upper()
             except asyncio.TimeoutError:
@@ -211,13 +223,28 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return
+    if not message.guild:
+        return
     if message.content.startswith("$play "):
-
         suits = ["diamonds", "hearts", "clubs", "spades"]
         random.shuffle(suits)
 
         player = User(message.author.id, suits.pop())
-        opponent = User(int(message.content[8:-1]), suits.pop())
+        try:
+            opponent = User(int(message.content[8:-1]), suits.pop())
+        except (ValueError, AttributeError):
+            return await message.channel.send(embed=create_embed("Invalid user mention"))
+
+        if opponent.id == player.id:
+            return await message.channel.send(embed=create_embed("Hey, you can't play against yourself silly!"))
+        if opponent.id == BOT_ID:
+            return await message.channel.send(embed=create_embed("I'm flattered but unfortunately my creator hasn't given me a brain, at least not yet."))
+        if player.id in users_playing:
+            return await message.channel.send(embed=create_embed("You are in a game!"))
+        if opponent.id in users_playing:
+            return await message.channel.send(embed=create_embed("{opponent.mention} is in a game!"))
+        users_playing.append(opponent.id)
+        users_playing.append(player.id)
 
         offer = await message.channel.send(embed=create_embed(f"{player.mention} wants to play a game of GOPS with you, {opponent.mention}.\nDo you accept?"))
         await offer.add_reaction("🇾")
@@ -235,7 +262,8 @@ async def on_message(message):
         await message.channel.send(embed=create_embed(f"{player.mention}, {opponent.mention} The game is starting!"))
 
         upturned = []
-        stock = create_suit() 
+        stock = create_suit()
+        random.shuffle(stock)
         stock_suit = suits.pop() 
         timeout = 180.0
 
@@ -251,14 +279,24 @@ async def on_message(message):
             await opponent.send_current_move(upturned, upturned_display, upturned_total, cards_remaining, player)
 
             while not opponent.move and not player.move:
-                print("w")
                 try:
                     first_move = await client.wait_for("message", check=lambda reply: reply.author.id in [player.id, opponent.id] and not reply.guild, timeout=timeout)
                     if first_move.content.startswith("$send "):
                         if first_move.author.id == player.id:
                             await opponent.author.send(embed=create_embed(f"{player.display_name} sent a message:\n{first_move.content[6:]}"))
+                            await player.author.send(embed=create_embed(f"Message has been sent."))
                         else:
                             await player.author.send(embed=create_embed(f"{opponent.display_name} sent a message:\n{first_move.content[6:]}"))
+                            await opponent.author.send(embed=create_embed(f"Message has been sent."))
+                    elif first_move.content == "$forfeit":
+                        if first_move.author.id == player.id:
+                            await player.author.send(embed=create_embed(f"You have forfeited the game."))
+                            await opponent.author.send(embed=create_embed(f"{player.display_name} forfeited the game."))
+                            return await message.channel.send(embed=create_embed(f"{player.mention} forfeited the game."))
+                        else:
+                            await opponent.author.send(embed=create_embed(f"You have forfeited the game."))
+                            await player.author.send(embed=create_embed(f"{opponent.display_name} forfeited the game."))
+                            return await message.channel.send(embed=create_embed(f"{opponent.mention} forfeited the game."))
                     elif first_move.author.id == player.id and first_move.content.upper() in player.hand:
                         await player.author.send(embed=create_embed(f"Waiting for opponent..."))
                         player.move = first_move.content.upper()
@@ -266,7 +304,7 @@ async def on_message(message):
                         await opponent.author.send(embed=create_embed(f"Waiting for opponent..."))
                         opponent.move = first_move.content.upper()
                     else:
-                        await first_move.author.send(embed=create_embed("Invalid move"))
+                        await first_move.author.send(embed=create_embed("Invalid move."))
                 except asyncio.TimeoutError:
                     return await message.channel.send(embed=create_embed(f'Sorry, the move took too long.'))
                 
@@ -292,8 +330,8 @@ async def on_message(message):
             else:
                 await message.channel.send(embed=create_embed("I am in error help pls"))
         
-        await player.send(embed=create_embed("The game has ended!"))
-        await opponent.send(embed=create_embed("The game has ended"))
+        await player.author.send(embed=create_embed("The game has ended!"))
+        await opponent.author.send(embed=create_embed("The game has ended"))
 
         result = player.prizes_total - opponent.prizes_total
 
@@ -311,7 +349,9 @@ async def on_message(message):
         rules = "**The Game of Pure Strategy (a.k.a GOPS) is a two-played purely strategical playing card game.**\n\n**Deck and Hands**\nEach player starts with one suit of cards in their hand. One suit is discarded and the other suit is shuffled and forms the draw deck.\n\n**Points**\nThe Ace is worth 1 point, the face cards are worth their face values, and the Jack, Queen, and King are worth 11, 12, and 13 points, respectively.\n\n**Gameplay**\nThe top card of the draw deck is placed face down. Players then place one card face down as a bid and simultaneously flip them. The player with the higher-ranking bid wins the upturned prize card. Both bids are then discarded, and a new card is drawn. The process repeats until the draw deck and hands are exhausted. In the event of a tie, both bids are discarded, and another prize card is drawn, and players now bid for all the prize cards.\n\n**Winner**\nThe winner is the player who's prize cards total is largest."
         return await message.channel.send(embed=create_embed(rules, title="How to play: The Game of Pure Strategy", bold=False))
     elif message.content == "$help":
-        commands = "$play (user) - Starts a GOPS game between you and the mentioned player\n$rules - Shows the rules of the playing card game GOPS\n$commands - Shows all the commands for this bot\n$send (message) - Use this in dm during a gops game to send messages to your opponent"
+        commands = "$play (user) - Starts a GOPS game between you and the mentioned player\n$rules - Shows the rules of the playing card game GOPS\n$commands - Shows all the commands for this bot\n$send (message) - Send messages to your opponent during a game\n$forfeit - Forfeits the game"
         return await message.channel.send(embed=create_embed(commands, title="Commands"))  
+    elif message.content.startswith("$send "):
+        return await message.channel.send(embed=create_embed("Use this during a game to send a message to your opponent!")) 
 
 client.run(TOKEN)
