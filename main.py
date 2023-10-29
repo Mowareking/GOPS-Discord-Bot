@@ -17,7 +17,7 @@ def create_embed(desc, footer=None, colour=discord.Color.from_rgb(0, 0, 0)):
 def sum_cards(cards):
     result = 0
     for card in cards:
-        if card == "A":
+        if card == "A": 
             result += 1
         elif card == "J":
             result += 11
@@ -47,78 +47,75 @@ def create_cards(cards, suit):
 
     for card in first_pass:
         if suit_colour == "r":
-            match card:
-                case "A":
-                    message += "<:rA:1167547696308027573>"
-                case "2":
-                    message += "<:r2:1167547670118813726>"
-                case "3":
-                    message += "<:r3:1167547671620358175>"
-                case "4":
-                    message += "<:r4:1167547674065649786>"
-                case "5":
-                    message += "<:r5:1167547661075894293>"
-                case "6":
-                    message += "<:r6:1167547664435523674>"
-                case "7":
-                    message += "<:r7:1167547665878368267>"
-                case "8":
-                    message += "<:r8:1167547668323631247>"
-                case "9":
-                    message += "<:r9:1167547707972395018>"
-                case "10":
-                    message += "<:r10:1167547709675286639>"
-                case "J":
-                    message += "<:rJ:1167547700154212402>"
-                case "Q":
-                    message += "<:rQ:1167547704168169607>"
-                case "K":
-                    message += "<:rK:1167547701488009287>"
+            if card == "A":
+                message += "<:rA:1167547696308027573>"
+            elif card == "2":
+                message += "<:r2:1167547670118813726>"
+            elif card == "3":
+                message += "<:r3:1167547671620358175>"
+            elif card == "4":
+                message += "<:r4:1167547674065649786>"
+            elif card == "5":
+                message += "<:r5:1167547661075894293>"
+            elif card == "6":
+                message += "<:r6:1167547664435523674>"
+            elif card == "7":
+                message += "<:r7:1167547665878368267>"
+            elif card == "8":
+                message += "<:r8:1167547668323631247>"
+            elif card == "9":
+                message += "<:r9:1167547707972395018>"
+            elif card == "10":
+                message += "<:r10:1167547709675286639>"
+            elif card == "J":
+                message += "<:rJ:1167547700154212402>"
+            elif card == "Q":
+                message += "<:rQ:1167547704168169607>"
+            elif card == "K":
+                message += "<:rK:1167547701488009287>"
 
         if suit_colour == "b":
-            match card:
-                case "A":
-                    message += "<:bA:1167547616259747900>"
-                case "2":
-                    message += "<:b2:1167547529513160824>"
-                case "3":
-                    message += "<:b3:1167547552535691304>"
-                case "4":
-                    message += "<:b4:1167547554515402884>"
-                case "5":
-                    message += "<:b5:1167547556121804920>"
-                case "6":
-                    message += "<:b6:1167547559129137323>"
-                case "7":
-                    message += "<:b7:1167547561935126629>"
-                case "8":
-                    message += "<:b8:1167547564447502456>"
-                case "9":
-                    message += "<:b9:1167547565848416440>"
-                case "10":
-                    message += "<:b10:1167547581140840470>"
-                case "J":
-                    message += "<:bJ:1167547607732723762>"
-                case "Q":
-                    message += "<:bQ:1167546141294993498>"
-                case "K":
-                    message += "<:bK:1167547608974233640>"
+            if card == "A":
+                message += "<:bA:1167547616259747900>"
+            elif card == "2":
+                message += "<:b2:1167547529513160824>"
+            elif card == "3":
+                message += "<:b3:1167547552535691304>"
+            elif card == "4":
+                message += "<:b4:1167547554515402884>"
+            elif card == "5":
+                message += "<:b5:1167547556121804920>"
+            elif card == "6":
+                message += "<:b6:1167547559129137323>"
+            elif card == "7":
+                message += "<:b7:1167547561935126629>"
+            elif card == "8":
+                message += "<:b8:1167547564447502456>"
+            elif card == "9":
+                message += "<:b9:1167547565848416440>"
+            elif card == "10":
+                message += "<:b10:1167547581140840470>"
+            elif card == "J":
+                message += "<:bJ:1167547607732723762>"
+            elif card == "Q":
+                message += "<:bQ:1167546141294993498>"
+            elif card == "K":
+                message += "<:bK:1167547608974233640>"
             
 
     if cards:
         message += "\n"
 
-    match suit:
-        case "diamonds":
-            message += "<:ediamonds:1167547698711379988>"*len_first_pass
-        case "hearts":
-            message += "<:ehearts:1167547614837870592>"*len_first_pass
-        case "clubs":
-            message += "<:eclubs:1167547612493262929>"*len_first_pass
-        case "spades":
-                message += "<:espades:1167547715270492382>"*len_first_pass
+    if suit == "diamonds":
+        message += "<:ediamonds:1167547698711379988>"*len_first_pass
+    elif suit == "hearts":
+        message += "<:ehearts:1167547614837870592>"*len_first_pass
+    elif suit == "clubs":
+        message += "<:eclubs:1167547612493262929>"*len_first_pass
+    elif suit == "spades":
+        message += "<:espades:1167547715270492382>"*len_first_pass
 
-    if len_first_pass != 10 or len(cards) == 11:
+    if len_first_pass != 10:
         return message
     
     message += "\n"
@@ -215,43 +212,62 @@ async def on_message(message):
                 opponent_prize_total = sum_cards(opponent_prizes)
                 upturned_prize_total = sum_cards(upturned)
 
-                await message.author.send(embed=create_embed(f"Upturned({upturned_prize_total}):\n{upturned_display}\nYour hand:\n{author_hand_display}\nYour prizes({author_prize_total}):\n{author_prizes_display}\n{opponent_display_name}'s prizes({opponent_prize_total}):\n{opponent_prizes_display}\n", f"Cards remaining in deck: {cards_remaining}"))
-                await opponent_author.send(embed=create_embed(f"Upturned({upturned_prize_total}):\n{upturned_display}\nYour hand:\n{opponent_hand_display}\nYour prizes({opponent_prize_total}):\n{opponent_prizes_display}\n{author_display_name}'s prizes({author_prize_total}):\n{author_prizes_display}\n", f"Cards remaining in deck: {cards_remaining}"))
+                await message.author.send(embed=create_embed(f"Upturned({upturned_prize_total}):\n{upturned_display}\nYour hand:\n{author_hand_display}\nYour prizes({author_prize_total}):\n{author_prizes_display}\n{opponent_display_name}'s prizes({opponent_prize_total}):\n{opponent_prizes_display}", f"Cards remaining in deck: {cards_remaining}"))
+                await opponent_author.send(embed=create_embed(f"Upturned({upturned_prize_total}):\n{upturned_display}\nYour hand:\n{opponent_hand_display}\nYour prizes({opponent_prize_total}):\n{opponent_prizes_display}\n{author_display_name}'s prizes({author_prize_total}):\n{author_prizes_display}", f"Cards remaining in deck: {cards_remaining}"))
 
                 while not opponent_move or not author_move:
                     try:
                         first_move = await client.wait_for("message", check=lambda reply: reply.author.id in [message.author.id, opponent_id] and not reply.guild, timeout=120.0)
+                        print(first_move.content)
                         if first_move.author.id == message.author.id and first_move.content.upper() in author_hand:
                             await message.author.send(embed=create_embed(f"Waiting on opponent..."))
                             author_move = first_move
                             break
+                        elif first_move.content.startswith("$send "):
+                            if first_move.author.id == message.author.id:
+                                await opponent_author.send(embed=create_embed(f"{author_display_name} sent a message:\n{first_move.content[6:]}"))
+                            else:
+                                await message.author.send(embed=create_embed(f"{opponent_display_name} sent a message:\n{first_move.content[6:]}"))
                         elif first_move.author.id == opponent_id and first_move.content.upper() in opponent_hand:
                             await opponent_author.send(embed=create_embed(f"Waiting on opponent..."))
                             opponent_move = first_move
                             break
-                        elif first_move.content.startswith("$send "):
-                            if first_move.author.id == message.author.id:
-                                await opponent_author.send(embed=f"{author_display_name}")
-
                         else:
                             await first_move.author.send(embed=create_embed("Invalid move"))
                     except asyncio.TimeoutError:
                         return await message.channel.send(embed=create_embed(f'Sorry, the move took too long.'))
                     
                 while not opponent_move:
+                    print("o")
                     try:
-                        opponent_move = await client.wait_for("message", check=lambda reply: reply.author.id == opponent_id and not reply.guild, timeout=120.0)
-                        if not opponent_move.content.upper() in opponent_hand:
+                        opponent_move = await client.wait_for("message", check=lambda reply: reply.author.id in [opponent_id, message.author.id] and not reply.guild, timeout=120.0)
+                        if opponent_move.content.startswith("$send "):
+                            if opponent_move.author.id == message.author.id:
+                                await opponent_author.send(embed=create_embed(f"{author_display_name} sent a message:\n{opponent_move.content[6:]}"))
+                            else:
+                                await message.author.send(embed=create_embed(f"{opponent_display_name} sent a message:\n{opponent_move.content[6:]}"))
+                            opponent_move = ""
+                        elif not opponent_move.content.upper() in opponent_hand:
                             await opponent_author.send(embed=create_embed("Invalid move"))
+                            opponent_move = ""
+                        elif not opponent_move.author.id == opponent_id:
                             opponent_move = ""
                     except asyncio.TimeoutError:
                         return await message.channel.send(embed=create_embed(f'Sorry, the move took too long.'))
                 
                 while not author_move:
                     try:
-                        author_move = await client.wait_for("message", check=lambda reply: reply.author.id == message.author.id and not reply.guild, timeout=120.0)
-                        if not author_move.content.upper() in author_hand:
+                        author_move = await client.wait_for("message", check=lambda reply: reply.author.id in [opponent_id, message.author.id] and not reply.guild, timeout=120.0)
+                        if author_move.content.startswith("$send "):
+                            if author_move.author.id == message.author.id:
+                                await opponent_author.send(embed=create_embed(f"{author_display_name} sent a message:\n{author_move.content[6:]}"))
+                            else:
+                                await message.author.send(embed=create_embed(f"{opponent_display_name} sent a message:\n{author_move.content[6:]}"))
+                            author_move = ""
+                        elif not author_move.content.upper() in author_hand:
                             await message.author.send(embed=create_embed("Invalid move"))
+                            author_move = ""
+                        elif not author_move.author.id == message.author.id:
                             author_move = ""
                     except asyncio.TimeoutError:
                         return await message.channel.send(embed=create_embed(f'Sorry, the move took too long.'))
@@ -265,28 +281,27 @@ async def on_message(message):
                 opponent_move_display = create_cards([opponent_move.content], opponent_suit)
                 author_move_display, opponent_move_display = f"You played:\n{author_move_display}\n{opponent_display_name} played:\n{opponent_move_display}", f"You played:\n{opponent_move_display}\n{author_display_name} played:\n{author_move_display}"
 
-                match opponent_move.content.upper():
-                    case "A":
-                        opponent_move = 1
-                    case "J":
-                        opponent_move = 11
-                    case "Q":
-                        opponent_move = 12
-                    case "K":
-                        opponent_move = 13
-                    case _:
-                        opponent_move = int(opponent_move.content)
-                match author_move.content.upper():
-                    case "A":
-                        author_move = 1
-                    case "J":
-                        author_move = 11
-                    case "Q":
-                        author_move = 12
-                    case "K":
-                        author_move = 13
-                    case _:
-                        author_move = int(author_move.content)
+                if opponent_move.content.upper() == "A":
+                    opponent_move = 1
+                elif opponent_move.content.upper() == "J":
+                    opponent_move = 11
+                elif opponent_move.content.upper() == "Q":
+                    opponent_move = 12
+                elif opponent_move.content.upper() == "K":
+                    opponent_move = 13
+                else:
+                    opponent_move = int(opponent_move.content)
+
+                if author_move.content.upper() == "A":
+                    author_move = 1
+                elif author_move.content.upper() == "J":
+                    author_move = 11
+                elif author_move.content.upper() == "Q":
+                    author_move = 12
+                elif author_move.content.upper() == "K":
+                    author_move = 13
+                else:
+                    author_move = int(author_move.content)
                 
                 if author_move > opponent_move:
                     author_move_display += "\nYou won the prize(s)!"
