@@ -1,14 +1,17 @@
 import discord
 import random
 import asyncio
+from key import TOKEN
 
 client = discord.Client(intents=discord.Intents.all())
 
-def create_embed(desc, footer=None, colour=discord.Color.from_rgb(0, 0, 0)):
+def create_embed(desc, footer=None, title="Game of Pure Strategy", colour=discord.Color.from_rgb(0, 0, 0), bold=True):
+    if bold:
+        desc = f"**{desc}**"
     embed = discord.Embed(
         colour=colour,
-        description=f"**{desc}**",
-        title="Game of Pure Strategy"
+        description=desc,
+        title=title
     )
     if footer:
         embed.set_footer(text=footer)
@@ -192,6 +195,7 @@ async def on_message(message):
             stock_suit = suits.pop()
 
             for i in range(13):
+                timeout = 180.0
                 upturned.append(stock.pop())
                 cards_remaining = len(stock)-1
                 author_move, opponent_move = "", ""
@@ -211,7 +215,7 @@ async def on_message(message):
 
                 while not opponent_move or not author_move:
                     try:
-                        first_move = await client.wait_for("message", check=lambda reply: reply.author.id in [message.author.id, opponent_id] and not reply.guild, timeout=120.0)
+                        first_move = await client.wait_for("message", check=lambda reply: reply.author.id in [message.author.id, opponent_id] and not reply.guild, timeout=timeout)
                         if first_move.author.id == message.author.id and first_move.content.upper() in author_hand:
                             await message.author.send(embed=create_embed(f"Waiting on opponent..."))
                             author_move = first_move
@@ -231,9 +235,8 @@ async def on_message(message):
                         return await message.channel.send(embed=create_embed(f'Sorry, the move took too long.'))
                     
                 while not opponent_move:
-                    print("o")
                     try:
-                        opponent_move = await client.wait_for("message", check=lambda reply: reply.author.id in [opponent_id, message.author.id] and not reply.guild, timeout=120.0)
+                        opponent_move = await client.wait_for("message", check=lambda reply: reply.author.id in [opponent_id, message.author.id] and not reply.guild, timeout=timeout)
                         if opponent_move.content.startswith("$send "):
                             if opponent_move.author.id == message.author.id:
                                 await opponent_author.send(embed=create_embed(f"{author_display_name} sent a message:\n{opponent_move.content[6:]}"))
@@ -250,7 +253,7 @@ async def on_message(message):
                 
                 while not author_move:
                     try:
-                        author_move = await client.wait_for("message", check=lambda reply: reply.author.id in [opponent_id, message.author.id] and not reply.guild, timeout=120.0)
+                        author_move = await client.wait_for("message", check=lambda reply: reply.author.id in [opponent_id, message.author.id] and not reply.guild, timeout=timeout)
                         if author_move.content.startswith("$send "):
                             if author_move.author.id == message.author.id:
                                 await opponent_author.send(embed=create_embed(f"{author_display_name} sent a message:\n{author_move.content[6:]}"))
@@ -337,9 +340,13 @@ async def on_message(message):
                 return await message.channel.send(embed=create_embed(f"{message.author.mention} and {opponent_mention} tied somehow!"))
     elif message.content == '$mowareking':
         return await message.channel.send(embed=create_embed("My Creator"))
+    elif message.content == "$rules":
+        rules = "**The Game of Pure Strategy (a.k.a GOPS) is a two-played purely strategical playing card game.**\n\n**Deck and Hands**\nEach player starts with one suit of cards in their hand. One suit is discarded and the other suit is shuffled and forms the draw deck.\n\n**Points**\nThe Ace is worth 1 point, the face cards are worth their face values, and the Jack, Queen, and King are worth 11, 12, and 13, respectively.\n\n**Gameplay**\nThe top card of the draw deck is placed face down. Players then place one card face down as a bid and simultaneously flip them. The player with the higher-ranking bid wins the upturned prize card. Both bids are then discarded, and a new card is drawn. The process repeats until the draw deck and hands are exhausted. In the event of a tie, both bids are discarded, and another prize card is drawn, and players now bid for all the prize cards.\n\n**Winner**\nThe winner is the player who's prize cards total is largest."
+        return await message.channel.send(embed=create_embed(rules, title="How to play: The Game of Pure Strategy", bold=False))
     elif message.content == "$help":
-        pass
+        commands = "$play (user) - Starts a GOPS game between you and the mentioned player\n$rules - Shows the rules of the playing card game GOPS\n$commands - Shows all the commands for this bot\n$send (message) - Use this in dm during a gops game to send messages to your opponent"
+        return await message.channel.send(embed=create_embed(commands, title="Commands"))
 
 
 
-client.run("MTE2NzE2NzM1NDk4MDAxNjIwMw.GphUqg.KmLq7KsnJTpv_pcDDTBqMXebGES-x1fopt7tS4")
+client.run(TOKEN)
