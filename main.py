@@ -139,8 +139,8 @@ async def on_message(message):
             opponent_id = int(message.content[8:-1])
             opponent_author = client.get_user(opponent_id)
             opponent_mention = message.content[6:-1] + ">"
-            opponent_display_name = opponent_author.display_name
-            author_display_name = message.author.display_name
+            opponent_display_name = opponent_author.display_name.capitalize()
+            author_display_name = message.author.display_name.capitalize()
 
             offer = await message.channel.send(embed=create_embed(f"{message.author.mention} wants to play a game of GOPS with you, {opponent_mention}.\nDo you accept?"))
             await offer.add_reaction("🇾")
@@ -154,10 +154,10 @@ async def on_message(message):
                  return await message.channel.send(embed=create_embed(f'Sorry, {opponent_mention} took too long to respond.'))
 
             opponent_emoji = opponent_reaction[0].emoji
-            if opponent_emoji == "🇾":
-                 await message.channel.send(embed=create_embed(f"{message.author.mention}, {opponent_mention} The game is starting!"))
-            elif opponent_emoji == "🇳":
+
+            if opponent_emoji == "🇳":
                  return await message.channel.send(embed=create_embed("Game offer declined."))
+            await message.channel.send(embed=create_embed(f"{message.author.mention}, {opponent_mention} The game is starting!"))
 
             author_hand, opponent_hand, stock = [str(x) for x in range(2, 11)], [str(x) for x in range(2, 11)], [str(x) for x in range(2, 11)]
 
@@ -187,12 +187,6 @@ async def on_message(message):
                  return await message.channel.send(embed=create_embed(f'Sorry, {opponent_mention} took too long to respond.'))
             """
 
-            opponent_emoji = opponent_reaction[0].emoji
-            if opponent_emoji == "🇾":
-                 await message.channel.send(embed=create_embed(f"{message.author.mention}, {opponent_mention} The game is starting!"))
-            elif opponent_emoji == "🇳":
-                 return await message.channel.send(embed=create_embed("Game offer declined."))
-
             author_suit = suits.pop()
             opponent_suit = suits.pop()
             stock_suit = suits.pop()
@@ -218,7 +212,6 @@ async def on_message(message):
                 while not opponent_move or not author_move:
                     try:
                         first_move = await client.wait_for("message", check=lambda reply: reply.author.id in [message.author.id, opponent_id] and not reply.guild, timeout=120.0)
-                        print(first_move.content)
                         if first_move.author.id == message.author.id and first_move.content.upper() in author_hand:
                             await message.author.send(embed=create_embed(f"Waiting on opponent..."))
                             author_move = first_move
