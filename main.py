@@ -3,6 +3,7 @@ import random
 import asyncio
 import os
 import json
+import csv
 from key import TOKEN
 """
 from keep_alive import keep_alive
@@ -221,6 +222,11 @@ def create_cards(cards, suit):
     message += second_pass
     return message
 
+def generate_data(move, hand, upturned, stock):
+    data = [int(move)]
+    
+
+
 @client.event
 async def on_ready():
     print("We have logged in as {0.user}".format(client))
@@ -357,6 +363,14 @@ async def on_message(message):
                     users_playing.remove(player.id)
                     users_playing.remove(opponent.id)
                     return await message.channel.send(embed=create_embed(f'Sorry, the move took too long.'))
+                
+            moves_data = open("training_data.csv", "a", newline="")
+            opponent_data = generate_data(opponent.move, opponent.hand, upturned, stock)
+            player_data = generate_data(player.move, player.hand, upturned, stock)
+            writer = csv.writer(f)
+            writer.writerow(opponent_data) 
+            writer.writerow(player_data) 
+            moves_data.close()
 
             opponent.execute_move()
             player.execute_move()
