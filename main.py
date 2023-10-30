@@ -1,10 +1,18 @@
 import discord
 import random
 import asyncio
-from key import TOKEN, BOT_ID
+import os
+import json
+from key import TOKEN
+"""
+from keep_alive import keep_alive
+"""
 
 client = discord.Client(intents=discord.Intents.all())
 users_playing = []
+
+with open("stats.json") as f:
+    users_stats = json.load(f)
 
 class User():
     def __init__(self, id, suit):
@@ -24,34 +32,32 @@ class User():
 
     async def send_current_move(self, upturned, upturned_display, upturned_total, cards_remaining, other_player):
         await self.author.send(embed=create_embed(f"Upturned({upturned_total}):\n{upturned_display}\nYour hand:\n{self.hand_display}\nYour prizes({self.prizes_total}):\n{self.prizes_display}\n{other_player.display_name}'s prizes({other_player.prizes_total}):\n{other_player.prizes_display}", f"Cards remaining in deck: {cards_remaining}"))
-    
+
     async def await_move(self, other_player, channel, timeout):
         while not self.move:
-            try:
-                second_move = await client.wait_for("message", check=lambda reply: reply.author.id in [other_player.id, self.author.id] and not reply.guild, timeout=timeout)
-                if second_move.content.startswith("$send "):
-                    if second_move.author.id == self.author.id:
-                        await other_player.author.send(embed=create_embed(f"{self.display_name} sent a message:\n{second_move.content[6:]}"))
-                        await self.author.send(embed=create_embed(f"Message has been sent."))
-                    else:
-                        await self.author.send(embed=create_embed(f"{other_player.display_name} sent a message:\n{second_move.content[6:]}"))
-                        await other_player.author.send(embed=create_embed(f"Message has been sent."))
-                elif second_move.content == "$forfeit":
-                    if second_move.author.id == self.id:
-                        await self.author.send(embed=create_embed(f"You have forfeited the game."))
-                        await other_player.author.send(embed=create_embed(f"{self.display_name} forfeited the game."))
-                        return await channel.send(embed=create_embed(f"{self.mention} forfeited the game."))
-                    else:
-                        await other_player.author.send(embed=create_embed(f"You have forfeited the game."))
-                        await self.author.send(embed=create_embed(f"{other_player.display_name} forfeited the game."))
-                        return await channel.send(embed=create_embed(f"{other_player.mention} forfeited the game."))
-                elif not second_move.content.upper() in self.hand:
-                    await self.author.send(embed=create_embed("Invalid move."))
-                elif second_move.author.id == self.id:
-                    self.move = second_move.content.upper()
-            except asyncio.TimeoutError:
-                return await channel.send(embed=create_embed(f'Sorry, the move took too long.'))
-    
+            second_move = await client.wait_for("message", check=lambda reply: reply.author.id in [other_player.id, self.author.id] and not reply.guild, timeout=timeout)
+            if second_move.content.startswith("$send "):
+                if second_move.author.id == self.author.id:
+                    await other_player.author.send(embed=create_embed(f"{self.display_name} sent a message:\n{second_move.content[6:]}"))
+                    await self.author.send(embed=create_embed(f"Message has been sent."))
+                else:
+                    await self.author.send(embed=create_embed(f"{other_player.display_name} sent a message:\n{second_move.content[6:]}"))
+                    await other_player.author.send(embed=create_embed(f"Message has been sent."))
+            elif second_move.content == "$forfeit":
+                if second_move.author.id == self.id:
+                    await self.author.send(embed=create_embed(f"You have forfeited the game."))
+                    await other_player.author.send(embed=create_embed(f"{self.display_name} forfeited the game."))
+                    return self.id
+                else:
+                    await other_player.author.send(embed=create_embed(f"You have forfeited the game."))
+                    await self.author.send(embed=create_embed(f"{other_player.display_name} forfeited the game."))
+                    return self.id
+            elif not second_move.content.upper() in self.hand:
+                await self.author.send(embed=create_embed("Invalid move."))
+            elif second_move.author.id == self.id:
+                self.move = second_move.content.upper()
+
+
     def execute_move(self):
         self.hand.remove(self.move)
         self.hand_display = create_cards(self.hand, self.suit)
@@ -69,14 +75,14 @@ class User():
             self.move = 13
         else:
             self.move = int(self.move)
-    
-    async def send_result(self, other_player, prizes_won=False, tie=False):
+
+    async def send_result(self, other_player, prizes_won=False, tie=False, suit="diamonds"):
         message = f"You played:\n{self.move_display}\n{other_player.display_name} played:\n{other_player.move_display}"
         if prizes_won:
             message += "\nYou won the prize(s)!"
             self.colour = discord.Color.from_rgb(22, 100, 8)
             self.prizes.extend(prizes_won)
-            self.prizes_display = create_cards(self.prizes, self.suit)
+            self.prizes_display = create_cards(self.prizes, suit)
             self.prizes_total = sum_cards(self.prizes)
         elif tie:
             message += "\nIt's a tie!"
@@ -193,7 +199,7 @@ def create_cards(cards, suit):
                 message += "<:bQ:1167546141294993498>"
             elif card == "K":
                 message += "<:bK:1167547608974233640>"
-            
+
 
     if cards:
         message += "\n"
@@ -209,7 +215,7 @@ def create_cards(cards, suit):
 
     if len_first_pass != 10:
         return message
-    
+
     message += "\n"
     second_pass = create_cards(cards[10:], suit)
     message += second_pass
@@ -237,12 +243,12 @@ async def on_message(message):
 
         if opponent.id == player.id:
             return await message.channel.send(embed=create_embed("Hey, you can't play against yourself silly!"))
-        if opponent.id == BOT_ID:
+        if opponent.id == client.user.id:
             return await message.channel.send(embed=create_embed("I'm flattered but unfortunately my creator hasn't given me a brain, at least not yet."))
         if player.id in users_playing:
             return await message.channel.send(embed=create_embed("You are in a game!"))
         if opponent.id in users_playing:
-            return await message.channel.send(embed=create_embed("{opponent.mention} is in a game!"))
+            return await message.channel.send(embed=create_embed(f"{opponent.mention} is in a game!"))
         users_playing.append(opponent.id)
         users_playing.append(player.id)
 
@@ -253,13 +259,28 @@ async def on_message(message):
         try:
             opponent_reaction = await client.wait_for("reaction_add", check=lambda reaction, user: reaction.emoji in ["🇾", "🇳"] and user.id == opponent.id, timeout=60.0)
         except asyncio.TimeoutError:
+            users_playing.remove(player.id)
+            users_playing.remove(opponent.id)
             return await message.channel.send(embed=create_embed(f'Sorry, {opponent.mention} took too long to respond.'))
 
         opponent_emoji = opponent_reaction[0].emoji
 
         if opponent_emoji == "🇳":
-                return await message.channel.send(embed=create_embed("Game offer declined."))
+                users_playing.remove(player.id)
+                users_playing.remove(opponent.id)
+                return await message.channel.send(embed=create_embed(f"{opponent.mention} declined game offer."))
         await message.channel.send(embed=create_embed(f"{player.mention}, {opponent.mention} The game is starting!"))
+
+        if not str(opponent.id) in users_stats.keys():
+            users_stats[str(opponent.id)] = [0, 0, 0]
+            with open('stats.json', 'w') as f:
+                stats = json.dumps(users_stats, indent=4)
+                print(stats, file=f)
+        if not str(player.id) in users_stats.keys():
+            users_stats[str(player.id)] = [0, 0, 0]
+            with open('stats.json', 'w') as f:
+                stats = json.dumps(users_stats, indent=4)
+                print(stats, file=f)
 
         upturned = []
         stock = create_suit()
@@ -292,10 +313,14 @@ async def on_message(message):
                         if first_move.author.id == player.id:
                             await player.author.send(embed=create_embed(f"You have forfeited the game."))
                             await opponent.author.send(embed=create_embed(f"{player.display_name} forfeited the game."))
+                            users_playing.remove(player.id)
+                            users_playing.remove(opponent.id)
                             return await message.channel.send(embed=create_embed(f"{player.mention} forfeited the game."))
                         else:
                             await opponent.author.send(embed=create_embed(f"You have forfeited the game."))
                             await player.author.send(embed=create_embed(f"{opponent.display_name} forfeited the game."))
+                            users_playing.remove(player.id)
+                            users_playing.remove(opponent.id)
                             return await message.channel.send(embed=create_embed(f"{opponent.mention} forfeited the game."))
                     elif first_move.author.id == player.id and first_move.content.upper() in player.hand:
                         await player.author.send(embed=create_embed(f"Waiting for opponent..."))
@@ -306,52 +331,114 @@ async def on_message(message):
                     else:
                         await first_move.author.send(embed=create_embed("Invalid move."))
                 except asyncio.TimeoutError:
+                    users_playing.remove(player.id)
+                    users_playing.remove(opponent.id)
                     return await message.channel.send(embed=create_embed(f'Sorry, the move took too long.'))
-                
+
             if not opponent.move:
-                await opponent.await_move(player, message.channel, timeout)
+                try:
+                    forfeited = await opponent.await_move(player, message.channel, timeout)
+                except asyncio.TimeoutError:
+                    users_playing.remove(player.id)
+                    users_playing.remove(opponent.id)
+                    return await message.channel.send(embed=create_embed(f'Sorry, the move took too long.'))
             else:
-                await player.await_move(opponent, message.channel, timeout)
+                try:
+                    forfeited = await player.await_move(opponent, message.channel, timeout)
+                    if forfeited == player.id:
+                        users_playing.remove(player.id)
+                        users_playing.remove(opponent.id)
+                        return await message.channel.send(embed=create_embed(f"{player.mention} forfeited the game."))
+                    elif forfeited == opponent.id:
+                        users_playing.remove(player.id)
+                        users_playing.remove(opponent.id)
+                        return await message.channel.send(embed=create_embed(f"{opponent.mention} forfeited the game."))
+                except asyncio.TimeoutError:
+                    users_playing.remove(player.id)
+                    users_playing.remove(opponent.id)
+                    return await message.channel.send(embed=create_embed(f'Sorry, the move took too long.'))
 
             opponent.execute_move()
             player.execute_move()
 
+            #await message.channel.send(embed=create_embed(f"Upturned({upturned_total}):\n{upturned_display}\n{player.display_name} played:\n{player.move_display}\n{opponent.display_name} played:\n {opponent.move_display}\n{player.display_name} prizes({player.prizes_total}):\n{player.prizes_display}\n{opponent.display_name} prizes({opponent.prizes_total}):\n{opponent.prizes_display}", title=f"{player.display_name} v {opponent.display_name}"))
+
             if player.move > opponent.move:
-                await player.send_result(opponent, upturned)
-                await opponent.send_result(player)
+                await player.send_result(opponent, upturned, suit=stock_suit)
+                await opponent.send_result(player, suit=stock_suit)
                 upturned = []
             elif opponent.move > player.move:
-                await player.send_result(opponent)
-                await opponent.send_result(player, upturned)
+                await player.send_result(opponent, suit=stock_suit)
+                await opponent.send_result(player, upturned, suit=stock_suit)
                 upturned = []
             elif player.move == opponent.move:
-                await player.send_result(opponent, tie=True)
-                await opponent.send_result(player, tie=True)
+                await player.send_result(opponent, tie=True, suit=stock_suit)
+                await opponent.send_result(player, tie=True, suit=stock_suit)
             else:
                 await message.channel.send(embed=create_embed("I am in error help pls"))
-        
+            
+      
         await player.author.send(embed=create_embed("The game has ended!"))
         await opponent.author.send(embed=create_embed("The game has ended"))
 
         result = player.prizes_total - opponent.prizes_total
 
+        users_playing.remove(player.id)
+        users_playing.remove(opponent.id)
+
         await message.channel.send(embed=create_embed(f"Final Scores:\n{player.mention}: {player.prizes_total}\n{opponent.mention}: {opponent.prizes_total}"))
         if result > 0:
+            users_stats[str(player.id)][0] += 1
+            users_stats[str(opponent.id)][2] += 1
+            with open('stats.json', 'w') as f:
+                stats = json.dumps(users_stats, indent=4)
+                print(stats, file=f)
             return await message.channel.send(embed=create_embed(f"🎉{player.mention} won against {opponent.mention} by {result} points!🎉"))
         elif result < 0:
+            users_stats[str(opponent.id)][0] += 1
+            users_stats[str(player.id)][2] += 1
             result *= -1
+            with open('stats.json', 'w') as f:
+                stats = json.dumps(users_stats, indent=4)
+                print(stats, file=f)
             return await message.channel.send(embed=create_embed(f"🎉{opponent.mention} won against {player.mention} by {result} points!🎉"))
         else:
+            users_stats[str(opponent.id)][1] += 1
+            users_stats[str(player.id)][1] += 1
+            with open('stats.json', 'w') as f:
+                stats = json.dumps(users_stats, indent=4)
+                print(stats, file=f)
             return await message.channel.send(embed=create_embed(f"{player.mention} and {opponent.mention} tied somehow!"))
+        
     elif message.content == '$mowareking':
         return await message.channel.send(embed=create_embed("My Creator"))
-    elif message.content == "$rules":
+    elif message.content == "$rules" or message.content.startswith("$rules "):
         rules = "**The Game of Pure Strategy (a.k.a GOPS) is a two-played purely strategical playing card game.**\n\n**Deck and Hands**\nEach player starts with one suit of cards in their hand. One suit is discarded and the other suit is shuffled and forms the draw deck.\n\n**Points**\nThe Ace is worth 1 point, the face cards are worth their face values, and the Jack, Queen, and King are worth 11, 12, and 13 points, respectively.\n\n**Gameplay**\nThe top card of the draw deck is placed face down. Players then place one card face down as a bid and simultaneously flip them. The player with the higher-ranking bid wins the upturned prize card. Both bids are then discarded, and a new card is drawn. The process repeats until the draw deck and hands are exhausted. In the event of a tie, both bids are discarded, and another prize card is drawn, and players now bid for all the prize cards.\n\n**Winner**\nThe winner is the player who's prize cards total is largest."
         return await message.channel.send(embed=create_embed(rules, title="How to play: The Game of Pure Strategy", bold=False))
-    elif message.content == "$help":
-        commands = "$play (user) - Starts a GOPS game between you and the mentioned player\n$rules - Shows the rules of the playing card game GOPS\n$commands - Shows all the commands for this bot\n$send (message) - Send messages to your opponent during a game\n$forfeit - Forfeits the game"
+    elif message.content == "$help" or message.content.startswith("$help "):
+        commands = "$play (user) - Starts a GOPS game between you and the mentioned player\n$rules - Shows the rules of the playing card game GOPS\n$help - Shows all the commands for this bot\n$send (message) - Send messages to your opponent during a game\n$forfeit - Forfeits the game\n$stats - Shows your W/D/L ratio\n$leaderboard - Shows the W/D/L ratio of every player"
         return await message.channel.send(embed=create_embed(commands, title="Commands"))  
-    elif message.content.startswith("$send "):
+    elif message.content == "$send" or message.content.startswith("$send "):
         return await message.channel.send(embed=create_embed("Use this during a game to send a message to your opponent!")) 
+    elif message.content == "$stats" or message.content.startswith("$stats "):
+        id = str(message.author.id)
+        if not id in users_stats.keys():
+            users_stats[id] = [0, 0, 0]
+            with open('stats.json', 'w') as f:
+                stats = json.dumps(users_stats, indent=4)
+                print(stats, file=f)
+        user_stats = users_stats[id]
+        return await message.channel.send(embed=create_embed(f"W/D/L:  {user_stats[0]}/{user_stats[1]}/{user_stats[2]}", title="Stats"))
+    elif message.content == "$leaderboard" or message.content.startswith("$leaderboard "):
+        msg = ""
+        for player, stats in users_stats.items():
+            player = client.get_user(int(player))
+            msg += f"{player.display_name}: {stats[0]}/{stats[1]}/{stats[2]}\n)"
+        msg = msg[:-2].replace(")", "")
+        return await message.channel.send(embed=create_embed(msg, title="Leaderboard", bold=False))
 
+
+"""
+keep_alive()
+"""
 client.run(TOKEN)
