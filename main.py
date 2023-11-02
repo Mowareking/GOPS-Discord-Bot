@@ -4,10 +4,8 @@ import asyncio
 import os
 import json
 import csv
+#from keep_alive import keep_alive
 from key import TOKEN
-"""
-from keep_alive import keep_alive
-"""
 
 client = discord.Client(intents=discord.Intents.all())
 users_playing = []
@@ -52,9 +50,10 @@ class User():
                 else:
                     await other_player.author.send(embed=create_embed(f"You have forfeited the game."))
                     await self.author.send(embed=create_embed(f"{other_player.display_name} forfeited the game."))
-                    return self.id
+                    return other_player.id
             elif not second_move.content.upper() in self.hand:
-                await self.author.send(embed=create_embed("Invalid move."))
+                if second_move.author.id == self.id:
+                    await second_move.author.send(embed=create_embed("Invalid move."))
             elif second_move.author.id == self.id:
                 self.move = second_move.content.upper()
 
@@ -147,72 +146,72 @@ def create_cards(cards, suit):
     for card in first_pass:
         if suit_colour == "r":
             if card == "A":
-                message += "<:rA:1167547696308027573>"
+                message += "<:rA:1169599443759272047>"
             elif card == "2":
-                message += "<:r2:1167547670118813726>"
+                message += "<:r2:1169599490429304852>"
             elif card == "3":
-                message += "<:r3:1167547671620358175>"
+                message += "<:r3:1169599492673241150>"
             elif card == "4":
-                message += "<:r4:1167547674065649786>"
+                message += "<:r4:1169599494963331072>"
             elif card == "5":
-                message += "<:r5:1167547661075894293>"
+                message += "<:r5:1169599514785620068>"
             elif card == "6":
-                message += "<:r6:1167547664435523674>"
+                message += "<:r6:1169599517994262559>"
             elif card == "7":
-                message += "<:r7:1167547665878368267>"
+                message += "<:r7:1169599600643018842>"
             elif card == "8":
-                message += "<:r8:1167547668323631247>"
+                message += "<:r8:1169599602899558440>"
             elif card == "9":
-                message += "<:r9:1167547707972395018>"
+                message += "<:r9:1169599440072486942>"
             elif card == "10":
-                message += "<:r10:1167547709675286639>"
+                message += "<:r10:1169599442391937064>"
             elif card == "J":
-                message += "<:rJ:1167547700154212402>"
+                message += "<:rJ:1169599461379551263>"
             elif card == "Q":
-                message += "<:rQ:1167547704168169607>"
+                message += "<:rQ:1169599598298398760>"
             elif card == "K":
-                message += "<:rK:1167547701488009287>"
+                message += "<:rK:1169599605466472580>"
 
         if suit_colour == "b":
             if card == "A":
-                message += "<:bA:1167547616259747900>"
+                message += "<:bA:1169599215425556590>"
             elif card == "2":
-                message += "<:b2:1167547529513160824>"
+                message += "<:b2:1169599236237692948>"
             elif card == "3":
-                message += "<:b3:1167547552535691304>"
+                message += "<:b3:1169599242910847046>"
             elif card == "4":
-                message += "<:b4:1167547554515402884>"
+                message += "<:b4:1169599247289683979>"
             elif card == "5":
-                message += "<:b5:1167547556121804920>"
+                message += "<:b5:1169599254860402728>"
             elif card == "6":
-                message += "<:b6:1167547559129137323>"
+                message += "<:b6:1169599265614602271>"
             elif card == "7":
-                message += "<:b7:1167547561935126629>"
+                message += "<:b7:1169599283138408548>"
             elif card == "8":
-                message += "<:b8:1167547564447502456>"
+                message += "<:b8:1169599209037639831>"
             elif card == "9":
-                message += "<:b9:1167547565848416440>"
+                message += "<:b9:1169599212011405312>"
             elif card == "10":
-                message += "<:b10:1167547581140840470>"
+                message += "<:b10:1169599213412302878>"
             elif card == "J":
-                message += "<:bJ:1167547607732723762>"
+                message += "<:bJ:1169599217686286376>"
             elif card == "Q":
-                message += "<:bQ:1167546141294993498>"
+                message += "<:bQ:1169599230487302144>"
             elif card == "K":
-                message += "<:bK:1167547608974233640>"
+                message += "<:bK:1169599226372685925>"
 
 
     if cards:
         message += "\n"
 
     if suit == "diamonds":
-        message += "<:ediamonds:1167547698711379988>"*len_first_pass
+        message += "<:ediamond:1169599445285998673>"*len_first_pass
     elif suit == "hearts":
-        message += "<:ehearts:1167547614837870592>"*len_first_pass
+        message += "<:ehearts:1169599296602120193>"*len_first_pass
     elif suit == "clubs":
-        message += "<:eclubs:1167547612493262929>"*len_first_pass
+        message += "<:eclubs:1169599234190880818>"*len_first_pass
     elif suit == "spades":
-        message += "<:espades:1167547715270492382>"*len_first_pass
+        message += "<:espades:1169599488487325738>"*len_first_pass
 
     if len_first_pass != 10:
         return message
@@ -222,10 +221,35 @@ def create_cards(cards, suit):
     message += second_pass
     return message
 
-def generate_data(move, hand, upturned, stock):
-    data = [int(move)]
-    
-
+def generate_data(move, computer_hand, opponent_hand, upturned_total, stock):
+  if move == "A":
+      move = 1
+  elif move == "J":
+      move = 11
+  elif move == "Q":
+      move = 12
+  elif move == "K":
+      move = 13
+  else:
+      move = int(move)
+  data = [move]
+  for cards in [computer_hand, opponent_hand, stock]:
+      if "A" in cards:
+          data.append(1)
+      else:
+          data.append(0)
+      for i in range(2, 11):
+          if str(i) in cards:
+              data.append(1)
+          else:
+              data.append(0)
+      for royal in ["J", "Q", "K"]:
+          if royal in cards:
+              data.append(1)
+          else:
+              data.append(0)
+  data.append(int(upturned_total))
+  return data
 
 @client.event
 async def on_ready():
@@ -255,9 +279,7 @@ async def on_message(message):
             return await message.channel.send(embed=create_embed("You are in a game!"))
         if opponent.id in users_playing:
             return await message.channel.send(embed=create_embed(f"{opponent.mention} is in a game!"))
-        users_playing.append(opponent.id)
-        users_playing.append(player.id)
-
+        
         offer = await message.channel.send(embed=create_embed(f"{player.mention} wants to play a game of GOPS with you, {opponent.mention}.\nDo you accept?"))
         await offer.add_reaction("🇾")
         await offer.add_reaction("🇳")
@@ -265,17 +287,16 @@ async def on_message(message):
         try:
             opponent_reaction = await client.wait_for("reaction_add", check=lambda reaction, user: reaction.emoji in ["🇾", "🇳"] and user.id == opponent.id, timeout=60.0)
         except asyncio.TimeoutError:
-            users_playing.remove(player.id)
-            users_playing.remove(opponent.id)
             return await message.channel.send(embed=create_embed(f'Sorry, {opponent.mention} took too long to respond.'))
 
         opponent_emoji = opponent_reaction[0].emoji
 
         if opponent_emoji == "🇳":
-                users_playing.remove(player.id)
-                users_playing.remove(opponent.id)
                 return await message.channel.send(embed=create_embed(f"{opponent.mention} declined game offer."))
         await message.channel.send(embed=create_embed(f"{player.mention}, {opponent.mention} The game is starting!"))
+
+        users_playing.append(opponent.id)
+        users_playing.append(player.id)
 
         if not str(opponent.id) in users_stats.keys():
             users_stats[str(opponent.id)] = [0, 0, 0]
@@ -293,6 +314,7 @@ async def on_message(message):
         random.shuffle(stock)
         stock_suit = suits.pop() 
         timeout = 180.0
+        log_channel = client.get_channel(1168995474255130774)
 
         for i in range(13):
             upturned.append(stock.pop())
@@ -344,6 +366,14 @@ async def on_message(message):
             if not opponent.move:
                 try:
                     forfeited = await opponent.await_move(player, message.channel, timeout)
+                    if forfeited == player.id:
+                        users_playing.remove(player.id)
+                        users_playing.remove(opponent.id)
+                        return await message.channel.send(embed=create_embed(f"{player.mention} forfeited the game."))
+                    elif forfeited == opponent.id:
+                        users_playing.remove(player.id)
+                        users_playing.remove(opponent.id)
+                        return await message.channel.send(embed=create_embed(f"{opponent.mention} forfeited the game."))
                 except asyncio.TimeoutError:
                     users_playing.remove(player.id)
                     users_playing.remove(opponent.id)
@@ -363,19 +393,19 @@ async def on_message(message):
                     users_playing.remove(player.id)
                     users_playing.remove(opponent.id)
                     return await message.channel.send(embed=create_embed(f'Sorry, the move took too long.'))
-                
+
             moves_data = open("training_data.csv", "a", newline="")
-            opponent_data = generate_data(opponent.move, opponent.hand, upturned, stock)
-            player_data = generate_data(player.move, player.hand, upturned, stock)
-            writer = csv.writer(f)
-            writer.writerow(opponent_data) 
+            opponent_data = generate_data(opponent.move, player.hand, opponent.hand, upturned_total, stock)
+            player_data = generate_data(player.move, opponent.hand, player.hand, upturned_total, stock)
+            writer = csv.writer(moves_data)
+            writer.writerow(opponent_data)
             writer.writerow(player_data) 
             moves_data.close()
 
             opponent.execute_move()
             player.execute_move()
 
-            #await message.channel.send(embed=create_embed(f"Upturned({upturned_total}):\n{upturned_display}\n{player.display_name} played:\n{player.move_display}\n{opponent.display_name} played:\n {opponent.move_display}\n{player.display_name} prizes({player.prizes_total}):\n{player.prizes_display}\n{opponent.display_name} prizes({opponent.prizes_total}):\n{opponent.prizes_display}", title=f"{player.display_name} v {opponent.display_name}"))
+            await log_channel.send(embed=create_embed(f"Upturned({upturned_total}):\n{upturned_display}\n{player.display_name} played:\n{player.move_display}\n{opponent.display_name} played:\n{opponent.move_display}\n{player.display_name} prizes({player.prizes_total}):\n{player.prizes_display}\n{opponent.display_name} prizes({opponent.prizes_total}):\n{opponent.prizes_display}", title=f"{player.display_name} v {opponent.display_name}"))
 
             if player.move > opponent.move:
                 await player.send_result(opponent, upturned, suit=stock_suit)
@@ -390,8 +420,8 @@ async def on_message(message):
                 await opponent.send_result(player, tie=True, suit=stock_suit)
             else:
                 await message.channel.send(embed=create_embed("I am in error help pls"))
-            
-      
+
+
         await player.author.send(embed=create_embed("The game has ended!"))
         await opponent.author.send(embed=create_embed("The game has ended"))
 
@@ -423,7 +453,7 @@ async def on_message(message):
                 stats = json.dumps(users_stats, indent=4)
                 print(stats, file=f)
             return await message.channel.send(embed=create_embed(f"{player.mention} and {opponent.mention} tied somehow!"))
-        
+
     elif message.content == '$mowareking':
         return await message.channel.send(embed=create_embed("My Creator"))
     elif message.content == "$rules" or message.content.startswith("$rules "):
@@ -452,7 +482,6 @@ async def on_message(message):
         return await message.channel.send(embed=create_embed(msg, title="Leaderboard", bold=False))
 
 
-"""
-keep_alive()
-"""
+
+#keep_alive()
 client.run(TOKEN)
